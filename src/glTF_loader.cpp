@@ -1,19 +1,20 @@
 #include "../include/glTF_loader.h"
 
+
 // A map of GPU buffer types and their respective key
-std::unordered_map<unsigned int, GPUBufferType> BufferTargets = {
-	{34962, ARRAY_BUFFER},
-	{34963, ELEMENT_ARRAY_BUFFER}
+std::unordered_map<unsigned int, GLenum> BufferTargets = {
+	{34962, GL_ARRAY_BUFFER},
+	{34963, GL_ELEMENT_ARRAY_BUFFER}
 };
 
 
 // A Map of component types along with their respective keys
-std::unordered_map<unsigned int, DataType> ComponentTypes = {
-	{5120, BYTE},
-	{5122, SHORT},
-	{5123, UNSIGNED_SHORT},
-	{5125, UNSIGNED_INT},
-	{5126, FLOAT}
+std::unordered_map<unsigned int,GLenum> ComponentTypes = {
+	{5120, GL_BYTE},
+	{5122, GL_SHORT},
+	{5123, GL_UNSIGNED_SHORT},
+	{5125, GL_UNSIGNED_INT},
+	{5126, GL_FLOAT}
 };
 
 glTFloader::glTFloader(const std::string& modelPath, const std::string& directory)
@@ -50,6 +51,9 @@ glTFloader::glTFloader(const std::string& modelPath, const std::string& director
 						loadBinaryGeometry(binFile, buffer.first);
 						binFile.close();
 					}
+					else {
+						std::cout << "failed to open file";
+					}
 				}
 			}
 		}
@@ -61,6 +65,26 @@ glTFloader::glTFloader(const std::string& modelPath, const std::string& director
 	catch (std::out_of_range e) {
 		std::cout << e.what();
 	}
+}
+
+std::vector<unsigned char> glTFloader::GetData(Accessor& accessor)
+{
+	// Get the buffer view of the given accessor
+	unsigned int bufferViewIndex = accessor.bufferView;
+	BufferView bufferView = BufferViews[bufferViewIndex];
+
+	// Get the buffer of the buffer view
+	unsigned int bufferIndex = bufferView.buffer;
+
+
+	// Get the buffer data
+    std::vector<unsigned char> data;
+	for (int i = bufferView.byteOffset; i != (bufferView.byteLength + bufferView.byteOffset); ++i) {
+		data.push_back(binaryGeometry[bufferIndex][i]);
+	}
+	
+	return data;
+
 }
 
 void glTFloader::loadAccessors(const json& jAccessors)
@@ -174,4 +198,6 @@ void glTFloader::loadBinaryGeometry(std::ifstream& binFile, unsigned int buffer)
 	binFile.read(reinterpret_cast<char*>(data.data()), size);
 
 	binaryGeometry[buffer] = data;
+
+	std::cout << binaryGeometry.size();
 }

@@ -71,7 +71,8 @@
   </ImportGroup>
   <PropertyGroup Label="UserMacros" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
-    <ExternalIncludePath>C:\Users\ENO NDIOUM\Downloads\glTF-Tester\include\nlohmann;$(ExternalIncludePath)</ExternalIncludePath>
+    <ExternalIncludePath>C:\Users\ENO NDIOUM\Downloads\glTF-Tester\libraries\includes;C:\Users\ENO NDIOUM\Downloads\glTF-Tester\include\nlohmann;$(ExternalIncludePath)</ExternalIncludePath>
+    <LibraryPath>C:\Users\ENO NDIOUM\Downloads\glTF-Tester\libraries\lib;$(LibraryPath)</LibraryPath>
   </PropertyGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
     <ClCompile>
@@ -111,6 +112,7 @@
     <Link>
       <SubSystem>Console</SubSystem>
       <GenerateDebugInformation>true</GenerateDebugInformation>
+      <AdditionalDependencies>opengl32.lib;glfw3.lib;%(AdditionalDependencies)</AdditionalDependencies>
     </Link>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
@@ -130,6 +132,7 @@
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
+    <ClCompile Include="..\..\Desktop\LearnOpenGL-master (2)\LearnOpenGL-master\LearnOpenGL-master\src\glad.c" />
     <ClCompile Include="src\glTF_loader.cpp" />
     <ClCompile Include="src\Source.cpp" />
   </ItemGroup>

@@ -4,6 +4,7 @@
 #include <iostream>
 #include <fstream>
 
+
 #include "nlohmann/json.hpp"
 
 #include "buffer.h"
@@ -50,6 +51,8 @@ public:
 
 	// Constructor
 	glTFloader(const std::string& modelPath, const std::string& directory);
+
+	std::vector<unsigned char> GetData(Accessor& accessor);
 
 private:
 	// A binary geometry to store the contents needed for drawing
