@@ -6,19 +6,6 @@
 const unsigned int SCR_WIDTH = 800;
 const unsigned int SCR_HEIGHT = 600;
 
-const char* vertexSource = 
-		"#version 330 core\n"
-		"layout (location = 0) in vec3 aPos;\n"
-		"void main(){\n"
-		"gl_Position = vec4(aPos, 1.0f);\n"
-		"}\0";
-
-const char* fragmentSource =
-		"#version 330 core\n"
-		"out vec4 FragColor;\n"
-		"void main(){\n"
-		"FragColor = vec4(1.0f, 1.0f, 0.0f, 1.0f);\n"
-		"}\0";
 
 size_t getNumComponents(const std::string& type) {
 	if (type == "VEC2")
@@ -50,8 +37,8 @@ int main() {
 	// Create a shader
 	Shader shader("resources/shaders/triangle.vs", "resources/shaders/triangle.fs");
 
-	const std::string modelPath = "resources/models/Triangle/glTF/Triangle.gltf";
-	const std::string directory = "resources/models/Triangle/glTF/";
+	const std::string modelPath = "resources/models/Box/glTF/Box.gltf";
+	const std::string directory = "resources/models/Box/glTF/";
 	glTFloader loader(modelPath, directory);
 
 	// VAO / VBO / EBO configuration
@@ -71,10 +58,10 @@ int main() {
 			glBufferData(GL_ARRAY_BUFFER, bufferData.size() * sizeof(float), bufferData.data(), GL_STATIC_DRAW);
 			glVertexAttribPointer(
 				0,
-				3,
-				GL_FLOAT,
-				GL_FALSE,
-				3 * sizeof(accessor.second.componentType),
+				getNumComponents(accessor.second.type),
+				accessor.second.componentType,
+				accessor.second.normalized ? GL_FALSE : GL_TRUE,
+				getNumComponents(accessor.second.type) * sizeof(accessor.second.componentType),
 				(void*)accessor.second.byteOffset
 			);
 			glEnableVertexAttribArray(0);
@@ -93,7 +80,7 @@ int main() {
 
 		shader.Use();
 		glBindVertexArray(VAO);
-		glDrawElements(GL_TRIANGLES, 3, GL_UNSIGNED_SHORT, 0);
+		glDrawElements(GL_TRIANGLES, 36, GL_UNSIGNED_SHORT, 0);
 		
 		glfwSwapBuffers(window);
 	}
