@@ -141,6 +141,7 @@
     <ClInclude Include="include\accessor.h" />
     <ClInclude Include="include\buffer.h" />
     <ClInclude Include="include\bufferView.h" />
+    <ClInclude Include="include\camera.h" />
     <ClInclude Include="include\glTF_loader.h" />
     <ClInclude Include="include\nlohmann\json.hpp" />
     <ClInclude Include="include\nlohmann\json_fwd.hpp" />
