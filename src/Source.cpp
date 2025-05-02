@@ -44,18 +44,29 @@ int main() {
 	// VAO / VBO / EBO configuration
 	unsigned int VAO, VBO, EBO;
 
+	// Save VBO and EBO configuration state into our VAO
 	glGenVertexArrays(1, &VAO);
 	glBindVertexArray(VAO);
 
 	glGenBuffers(1, &VBO);
 	glGenBuffers(1, &EBO);
 	
+	std::vector<unsigned char> vertices;
+	std::vector<unsigned char> indices;
+
+	// Use accessors to configure VBO/EBO
 	for (auto& accessor : loader.Accessors) {
-		BufferView bufferView                 = loader.BufferViews[accessor.second.bufferView];
-		std::vector<unsigned char> bufferData = loader.GetData(accessor.second);
+		// Get the current buffer view
+		BufferView bufferView    = loader.BufferViews[accessor.second.bufferView];
+		// Check if it's an array buffer view
 		if (bufferView.target == GL_ARRAY_BUFFER) {
+			// Load buffer data into vertices
+			vertices = loader.GetData(accessor.second);
+			// Bind our VBO object to the array buffer
 			glBindBuffer(GL_ARRAY_BUFFER, VBO);
-			glBufferData(GL_ARRAY_BUFFER, bufferData.size() * sizeof(float), bufferData.data(), GL_STATIC_DRAW);
+			// Copy the vertices into the VBO
+			glBufferData(GL_ARRAY_BUFFER, vertices.size() * sizeof(float), vertices.data(), GL_STATIC_DRAW);
+			// Configure attributes pointer
 			glVertexAttribPointer(
 				0,
 				getNumComponents(accessor.second.type),
@@ -64,23 +75,34 @@ int main() {
 				getNumComponents(accessor.second.type) * sizeof(accessor.second.componentType),
 				(void*)accessor.second.byteOffset
 			);
+			// Enable vertex attributes
 			glEnableVertexAttribArray(0);
+			// Unbind VBO
 			glBindBuffer(GL_ARRAY_BUFFER, 0);
+	
 		}
+		// Check if buffer view is an element buffer view
 		else if (bufferView.target == GL_ELEMENT_ARRAY_BUFFER) {
+			// Load buffer into indices
+			indices = loader.GetData(accessor.second);
+			// Bind our EBO object to element array buffer
 			glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, EBO);
-			glBufferData(GL_ELEMENT_ARRAY_BUFFER, bufferData.size() * sizeof(accessor.second.componentType), bufferData.data(), GL_STATIC_DRAW);
+			// Copy the indices into our EBO object
+			glBufferData(GL_ELEMENT_ARRAY_BUFFER, indices.size() * sizeof(accessor.second.componentType), indices.data(), GL_STATIC_DRAW);
 		}
     }
-	
+	// Unbind our VAO
 	glBindVertexArray(0);
 	
 	while (!glfwWindowShouldClose(window)) {
 		glfwPollEvents();
 
+		// Use shader program
 		shader.Use();
+		// Bind our VAO
 		glBindVertexArray(VAO);
-		glDrawElements(GL_TRIANGLES, 36, GL_UNSIGNED_SHORT, 0);
+		// Draw a box
+		glDrawElements(GL_TRIANGLES, indices.size(), GL_UNSIGNED_SHORT, 0);
 		
 		glfwSwapBuffers(window);
 	}
