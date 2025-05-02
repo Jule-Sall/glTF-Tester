@@ -7,6 +7,8 @@
 #include <fstream>
 #include <sstream>
 
+#include <glm/glm.hpp>
+
 class Shader {
 public:
 	// Constructor / Destructor
@@ -14,6 +16,11 @@ public:
 	~Shader();
 
 	void Use();
+
+	// Uniforms
+	void SetMatrix4f(const std::string& name, glm::mat4 mat) {
+		glUniformMatrix4fv(glGetUniformLocation(ID, name.c_str()), 1, GL_FALSE, &mat[0][0]);
+	}
 
 private:
 	// Program ID

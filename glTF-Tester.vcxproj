@@ -148,6 +148,8 @@
     <ClInclude Include="include\shader.h" />
   </ItemGroup>
   <ItemGroup>
+    <None Include="resources\shaders\box.fs" />
+    <None Include="resources\shaders\box.vs" />
     <None Include="resources\shaders\triangle.fs" />
     <None Include="resources\shaders\triangle.vs" />
   </ItemGroup>

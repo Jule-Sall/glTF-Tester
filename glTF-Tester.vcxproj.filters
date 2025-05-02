@@ -57,5 +57,7 @@
   <ItemGroup>
     <None Include="resources\shaders\triangle.vs" />
     <None Include="resources\shaders\triangle.fs" />
+    <None Include="resources\shaders\box.vs" />
+    <None Include="resources\shaders\box.fs" />
   </ItemGroup>
 </Project>
