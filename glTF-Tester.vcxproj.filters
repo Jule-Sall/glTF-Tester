@@ -24,6 +24,9 @@
     <ClCompile Include="..\..\Desktop\LearnOpenGL-master (2)\LearnOpenGL-master\LearnOpenGL-master\src\glad.c">
       <Filter>Source Files</Filter>
     </ClCompile>
+    <ClCompile Include="src\shader.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="include\nlohmann\json.hpp">
@@ -44,5 +47,12 @@
     <ClInclude Include="include\bufferView.h">
       <Filter>Header Files</Filter>
     </ClInclude>
+    <ClInclude Include="include\shader.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="resources\shaders\triangle.vs" />
+    <None Include="resources\shaders\triangle.fs" />
   </ItemGroup>
 </Project>

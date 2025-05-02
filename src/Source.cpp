@@ -1,6 +1,7 @@
 #include <iostream>
 
 #include "../include/glTF_loader.h"
+#include "../include/shader.h"
 
 const unsigned int SCR_WIDTH = 800;
 const unsigned int SCR_HEIGHT = 600;
@@ -46,46 +47,8 @@ int main() {
 
 	glViewport(0, 0, SCR_WIDTH, SCR_HEIGHT);
 
-	// Compile shaders
-	// 1.vertex
-	unsigned int vertex, fragment;
-	vertex = glCreateShader(GL_VERTEX_SHADER);
-	glShaderSource(vertex, 1, &vertexSource, NULL);
-	glCompileShader(vertex);
-	// Check for compile errors
-	int success;
-	char infoLog[512];
-	glGetShaderiv(vertex, GL_COMPILE_STATUS, &success);
-	if (!success) {
-		glGetShaderInfoLog(vertex, 512, NULL, infoLog);
-		std::cout << "ERROR::SHADER::VERTEX::COMPILATION_FAILED " << infoLog << std::endl;
-	}
-	// 2.fragment
-	fragment = glCreateShader(GL_FRAGMENT_SHADER);
-	glShaderSource(fragment, 1, &fragmentSource, NULL);
-	glCompileShader(fragment);
-	// Check for compile errors
-	glGetShaderiv(fragment, GL_COMPILE_STATUS, &success);
-	if (!success) {
-		glGetShaderInfoLog(fragment, 512, NULL, infoLog);
-		std::cout << "ERROR::SHADER::FRAGMENT::COMPILATION_FAILED " << infoLog << std::endl;
-	}
-
-	// Link shaders to program
-	unsigned int program;
-	program = glCreateProgram();
-	glAttachShader(program, vertex);
-	glAttachShader(program, fragment);
-	glLinkProgram(program);
-	// Check for linking errors
-	glGetProgramiv(program, GL_LINK_STATUS, &success);
-	if (!success) {
-		glGetProgramInfoLog(program, 512, NULL, infoLog);
-		std::cout << "ERROR::PROGRAM::LINKING_FAILED " << infoLog << std::endl;
-	}
-	// Delete shaders
-	glDeleteShader(vertex);
-	glDeleteShader(fragment);
+	// Create a shader
+	Shader shader("resources/shaders/triangle.vs", "resources/shaders/triangle.fs");
 
 	const std::string modelPath = "resources/models/Triangle/glTF/Triangle.gltf";
 	const std::string directory = "resources/models/Triangle/glTF/";
@@ -128,14 +91,13 @@ int main() {
 	while (!glfwWindowShouldClose(window)) {
 		glfwPollEvents();
 
-		glUseProgram(program);
+		shader.Use();
 		glBindVertexArray(VAO);
 		glDrawElements(GL_TRIANGLES, 3, GL_UNSIGNED_SHORT, 0);
-		//glDrawArrays(GL_TRIANGLES, 0, 3);
+		
 		glfwSwapBuffers(window);
 	}
 	// De-allocate resources
-	glDeleteProgram(program);
 	glDeleteBuffers(1, &VBO);
 	glDeleteBuffers(1, &EBO);
 	glDeleteVertexArrays(1, &VAO);

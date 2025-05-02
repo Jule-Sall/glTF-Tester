@@ -134,6 +134,7 @@
   <ItemGroup>
     <ClCompile Include="..\..\Desktop\LearnOpenGL-master (2)\LearnOpenGL-master\LearnOpenGL-master\src\glad.c" />
     <ClCompile Include="src\glTF_loader.cpp" />
+    <ClCompile Include="src\shader.cpp" />
     <ClCompile Include="src\Source.cpp" />
   </ItemGroup>
   <ItemGroup>
@@ -143,6 +144,11 @@
     <ClInclude Include="include\glTF_loader.h" />
     <ClInclude Include="include\nlohmann\json.hpp" />
     <ClInclude Include="include\nlohmann\json_fwd.hpp" />
+    <ClInclude Include="include\shader.h" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="resources\shaders\triangle.fs" />
+    <None Include="resources\shaders\triangle.vs" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">
