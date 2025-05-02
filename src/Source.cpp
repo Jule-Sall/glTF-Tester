@@ -6,6 +6,8 @@
 const unsigned int SCR_WIDTH = 800;
 const unsigned int SCR_HEIGHT = 600;
 
+// Process input
+void processInput(GLFWwindow* window);
 
 size_t getNumComponents(const std::string& type) {
 	if (type == "VEC2")
@@ -95,6 +97,8 @@ int main() {
 	glBindVertexArray(0);
 	
 	while (!glfwWindowShouldClose(window)) {
+		// Input
+		processInput(window);
 		glfwPollEvents();
 
 		// Use shader program
@@ -114,4 +118,11 @@ int main() {
 
 	glfwTerminate();
 	return 0;
+}
+
+void processInput(GLFWwindow* window)
+{
+	// Close if user presses the espace key
+	if (glfwGetKey(window, GLFW_KEY_ESCAPE) == GLFW_PRESS)
+		glfwSetWindowShouldClose(window, true);
 }
