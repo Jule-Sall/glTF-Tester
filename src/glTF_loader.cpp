@@ -81,7 +81,7 @@ glTFloader::glTFloader(const std::string& modelPath, const std::string& director
 		std::cout << e.what();
 	}
 }
-
+ 
 std::vector<unsigned char> glTFloader::GetData(Accessor& accessor)
 {
 	// Get the buffer view of the given accessor
@@ -94,7 +94,7 @@ std::vector<unsigned char> glTFloader::GetData(Accessor& accessor)
 
 	// Get the buffer data
     std::vector<unsigned char> data;
-	for (int i = bufferView.byteOffset; i != (bufferView.byteLength + bufferView.byteOffset); ++i) {
+	for (int i = bufferView.byteOffset + accessor.byteOffset; i != (bufferView.byteLength + bufferView.byteOffset); ++i) {
 		data.push_back(binaryGeometry[bufferIndex][i]);
 	}
 	

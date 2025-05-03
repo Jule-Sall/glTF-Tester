@@ -111,6 +111,7 @@ int main() {
 			&& 
 			primitives[index].attributes.count(NORMAL))
 		{
+
 			
 			// Get the position accessor index
 			unsigned int posAccessorIndex = primitives[index].attributes[POSITION];
@@ -122,8 +123,8 @@ int main() {
 			Accessor normAccessor = loader.Accessors[normAccessorIndex];
 
 			// Get positions data
-			std::vector<unsigned char> positions = loader.GetData(posAccessor);
-			const float* pos = reinterpret_cast<const float*>(positions.data());
+			std::vector<unsigned char> positionData = loader.GetData(posAccessor);
+			const float* positions = reinterpret_cast<const float*>(positionData.data());
 			// Get normals data
 			std::vector<unsigned char> normals = loader.GetData(normAccessor);
 			const float* norm = reinterpret_cast<const float*>(normals.data());
@@ -133,14 +134,13 @@ int main() {
 			for (int i = 0; i != posAccessor.count; ++i) {
 				Vertex vertex;
 				// 1.Position
-				vertex.Position.x = pos[posIndex++];
-				vertex.Position.y = pos[posIndex++];
-				vertex.Position.z = pos[posIndex++];
+				vertex.Position.x = positions[i * 3 + 0];
+				vertex.Position.y = positions[i * 3 + 1];
+				vertex.Position.z = positions[i * 3 + 2];
 				// 2.Normal
-				vertex.Normal.x = norm[normIndex++];
-				vertex.Normal.y = norm[normIndex++];
-				vertex.Normal.z = norm[normIndex++];
-				
+				vertex.Normal.x = norm[i * 3 + 0];
+				vertex.Normal.y = norm[i * 3 + 1];
+				vertex.Normal.z = norm[i * 3 + 2];
 				vertices.push_back(vertex);
 			}
 			glBindBuffer(GL_ARRAY_BUFFER, VBO);
@@ -158,6 +158,7 @@ int main() {
 		glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, EBO);
 		glBufferData(GL_ELEMENT_ARRAY_BUFFER, indices.size() * getComponentTypeSize(indexType), indices.data(), GL_STATIC_DRAW);
 	    index++;
+		vertices.clear();
 	}
 
 	// Unbind our VAO
