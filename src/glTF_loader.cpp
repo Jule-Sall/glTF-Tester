@@ -223,11 +223,11 @@ void glTFloader::loadMeshes(const json& jMeshes)
 				}
 				if (jPrimitive["attributes"].contains("TEXCOORD_0")) {
 					mesh.primitives[primitiveIndex]
-						.attributes[TEXCOORD_0] = jPrimitive["TEXCOORD_0"];
+						.attributes[TEXCOORD_0] = jPrimitive["attributes"]["TEXCOORD_0"];
 				}
 				if (jPrimitive["attributes"].contains("COLOR_0")) {
 					mesh.primitives[primitiveIndex]
-						.attributes[COLOR_0] = jPrimitive["COLOR_0"];
+						.attributes[COLOR_0] = jPrimitive["attributes"]["COLOR_0"];
 				}
 				// Indices
 				if (jPrimitive.contains("indices")) {

@@ -86,8 +86,8 @@ int main() {
 	// Create a shader
 	Shader shader("resources/shaders/box.vs", "resources/shaders/box.fs");
 
-	const std::string modelPath = "resources/models/Box/glTF/Box.gltf";
-	const std::string directory = "resources/models/Box/glTF/";
+	const std::string modelPath = "resources/models/BoxVertexColors/glTF/BoxVertexColors.gltf";
+	const std::string directory = "resources/models/BoxVertexColors/glTF/";
 	glTFloader loader(modelPath, directory);
 
 	// VAO / VBO / EBO configuration
@@ -110,9 +110,11 @@ int main() {
 		auto primitives = mesh.second.primitives;
 		if (primitives[index].attributes.count(POSITION) 
 			&& 
-			primitives[index].attributes.count(NORMAL))
+			primitives[index].attributes.count(NORMAL)
+			&&
+			primitives[index].attributes.count(COLOR_0))
 		{
-
+			std::cout << "called!" << std::endl;
 			
 			// Get the position accessor index
 			unsigned int posAccessorIndex = primitives[index].attributes[POSITION];
@@ -122,13 +124,20 @@ int main() {
 			unsigned int normAccessorIndex = primitives[index].attributes[NORMAL];
 			// Get the normal accessor
 			Accessor normAccessor = loader.Accessors[normAccessorIndex];
-
+			// Get the color accessor index
+			unsigned int colorAccessorIndex = primitives[index].attributes[COLOR_0];
+			// Get the color accessor
+			Accessor colorAccessor = loader.Accessors[colorAccessorIndex];
+			
 			// Get positions data
 			std::vector<unsigned char> positionData = loader.GetData(posAccessor);
 			const float* positions = reinterpret_cast<const float*>(positionData.data());
 			// Get normals data
-			std::vector<unsigned char> normals = loader.GetData(normAccessor);
-			const float* norm = reinterpret_cast<const float*>(normals.data());
+			std::vector<unsigned char> normalData = loader.GetData(normAccessor);
+			const float* normals = reinterpret_cast<const float*>(normalData.data());
+			// Get colors data
+			std::vector<unsigned char> colorData = loader.GetData(colorAccessor);
+			const float* colors = reinterpret_cast<const float*>(colorData.data());
 
 			for (int i = 0; i != posAccessor.count; ++i) {
 				Vertex vertex;
@@ -137,9 +146,14 @@ int main() {
 				vertex.Position.y = positions[i * 3 + 1];
 				vertex.Position.z = positions[i * 3 + 2];
 				// 2.Normal
-				vertex.Normal.x = norm[i * 3 + 0];
-				vertex.Normal.y = norm[i * 3 + 1];
-				vertex.Normal.z = norm[i * 3 + 2];
+				vertex.Normal.x = normals[i * 3 + 0];
+				vertex.Normal.y = normals[i * 3 + 1];
+				vertex.Normal.z = normals[i * 3 + 2];
+				// 3.Color
+				vertex.Color.x = colors[i * 3 + 0];
+				vertex.Color.y = colors[i * 3 + 1];
+				vertex.Color.z = colors[i * 3 + 2];
+
 				vertices.push_back(vertex);
 			}
 			glBindBuffer(GL_ARRAY_BUFFER, VBO);
@@ -148,6 +162,8 @@ int main() {
 			glEnableVertexAttribArray(0);
 		    glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, sizeof(Vertex), (void*)offsetof(Vertex, Normal));
 			glEnableVertexAttribArray(1);
+			glVertexAttribPointer(2, 3, GL_FLOAT, GL_FALSE, sizeof(Vertex), (void*)offsetof(Vertex, Color));
+			glEnableVertexAttribArray(2);
 		}
 	    // Indices
 		unsigned int indicesAccessorIndex = primitives[index].indices;
