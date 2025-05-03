@@ -9,7 +9,8 @@
 enum Attribute {
 	NORMAL,
 	POSITION,
-	TEXCOORD_0
+	TEXCOORD_0,
+	COLOR_0
 };
 
 // Geometry to be rendered within the given material
