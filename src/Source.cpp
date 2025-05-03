@@ -129,8 +129,6 @@ int main() {
 			std::vector<unsigned char> normals = loader.GetData(normAccessor);
 			const float* norm = reinterpret_cast<const float*>(normals.data());
 
-			unsigned int posIndex = 0;
-			unsigned int normIndex = 0;
 			for (int i = 0; i != posAccessor.count; ++i) {
 				Vertex vertex;
 				// 1.Position
