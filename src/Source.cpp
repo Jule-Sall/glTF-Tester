@@ -33,6 +33,27 @@ size_t getNumComponents(const std::string& type) {
 	if (type == "VEC4")
 		return 4;
 }
+
+
+size_t getComponentTypeSize(GLenum componentType) {
+	switch (componentType) {
+	case GL_BYTE:           return sizeof(int8_t);
+	case GL_UNSIGNED_BYTE:  return sizeof(uint8_t);
+	case GL_SHORT:          return sizeof(int16_t);
+	case GL_UNSIGNED_SHORT: return sizeof(uint16_t);
+	case GL_INT:            return sizeof(int32_t);
+	case GL_UNSIGNED_INT:   return sizeof(uint32_t);
+	case GL_FLOAT:          return sizeof(float);
+	default:
+		std::cerr << "Unsupported component type: " << componentType << std::endl;
+		return 0;
+	}
+}
+
+struct Vertex {
+	glm::vec3 Position;
+	glm::vec3 Normal;
+};
 int main() {
 	glfwInit();
 
@@ -78,46 +99,67 @@ int main() {
 	glGenBuffers(1, &VBO);
 	glGenBuffers(1, &EBO);
 	
-	std::vector<unsigned char> vertices;
+	std::vector<Vertex> vertices;
 	std::vector<unsigned char> indices;
 
-	// Use accessors to configure VBO/EBO
-	for (auto& accessor : loader.Accessors) {
-		// Get the current buffer view
-		BufferView bufferView    = loader.BufferViews[accessor.second.bufferView];
-		// Check if it's an array buffer view
-		if (bufferView.target == GL_ARRAY_BUFFER) {
-			// Load buffer data into vertices
-			vertices = loader.GetData(accessor.second);
-			// Bind our VBO object to the array buffer
+	GLenum indexType;
+	unsigned int index = 0;
+	for (auto& mesh : loader.Meshes) {
+		// Primitives
+		auto primitives = mesh.second.primitives;
+		if (primitives[index].attributes.count(POSITION) 
+			&& 
+			primitives[index].attributes.count(NORMAL))
+		{
+			
+			// Get the position accessor index
+			unsigned int posAccessorIndex = primitives[index].attributes[POSITION];
+			// Get the position accessor
+			Accessor posAccessor = loader.Accessors[posAccessorIndex];
+			// Get the normal accessor index
+			unsigned int normAccessorIndex = primitives[index].attributes[NORMAL];
+			// Get the normal accessor
+			Accessor normAccessor = loader.Accessors[normAccessorIndex];
+
+			// Get positions data
+			std::vector<unsigned char> positions = loader.GetData(posAccessor);
+			const float* pos = reinterpret_cast<const float*>(positions.data());
+			// Get normals data
+			std::vector<unsigned char> normals = loader.GetData(normAccessor);
+			const float* norm = reinterpret_cast<const float*>(normals.data());
+
+			unsigned int posIndex = 0;
+			unsigned int normIndex = 0;
+			for (int i = 0; i != posAccessor.count; ++i) {
+				Vertex vertex;
+				// 1.Position
+				vertex.Position.x = pos[posIndex++];
+				vertex.Position.y = pos[posIndex++];
+				vertex.Position.z = pos[posIndex++];
+				// 2.Normal
+				vertex.Normal.x = norm[normIndex++];
+				vertex.Normal.y = norm[normIndex++];
+				vertex.Normal.z = norm[normIndex++];
+				
+				vertices.push_back(vertex);
+			}
 			glBindBuffer(GL_ARRAY_BUFFER, VBO);
-			// Copy the vertices into the VBO
-			glBufferData(GL_ARRAY_BUFFER, vertices.size() * sizeof(float), vertices.data(), GL_STATIC_DRAW);
-			// Configure attributes pointer
-			glVertexAttribPointer(
-				0,
-				getNumComponents(accessor.second.type),
-				accessor.second.componentType,
-				accessor.second.normalized ? GL_FALSE : GL_TRUE,
-				getNumComponents(accessor.second.type) * sizeof(accessor.second.componentType),
-				(void*)accessor.second.byteOffset
-			);
-			// Enable vertex attributes
+			glBufferData(GL_ARRAY_BUFFER, vertices.size() * sizeof(Vertex), vertices.data(), GL_STATIC_DRAW);
+			glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, sizeof(Vertex), (void*)0);
 			glEnableVertexAttribArray(0);
-			// Unbind VBO
-			glBindBuffer(GL_ARRAY_BUFFER, 0);
-	
+		    glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, sizeof(Vertex), (void*)offsetof(Vertex, Normal));
+			glEnableVertexAttribArray(1);
 		}
-		// Check if buffer view is an element buffer view
-		else if (bufferView.target == GL_ELEMENT_ARRAY_BUFFER) {
-			// Load buffer into indices
-			indices = loader.GetData(accessor.second);
-			// Bind our EBO object to element array buffer
-			glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, EBO);
-			// Copy the indices into our EBO object
-			glBufferData(GL_ELEMENT_ARRAY_BUFFER, indices.size() * sizeof(accessor.second.componentType), indices.data(), GL_STATIC_DRAW);
-		}
-    }
+	    // Indices
+		unsigned int indicesAccessorIndex = primitives[index].indices;
+		Accessor indicesAccessor = loader.Accessors[indicesAccessorIndex];
+		indices = loader.GetData(indicesAccessor);
+		indexType = indicesAccessor.componentType;
+		glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, EBO);
+		glBufferData(GL_ELEMENT_ARRAY_BUFFER, indices.size() * getComponentTypeSize(indexType), indices.data(), GL_STATIC_DRAW);
+	    index++;
+	}
+
 	// Unbind our VAO
 	glBindVertexArray(0);
 	
@@ -151,9 +193,11 @@ int main() {
 
 		// Bind our VAO
 		glBindVertexArray(VAO);
-		// Draw a box
-		glDrawElements(GL_TRIANGLES, indices.size(), GL_UNSIGNED_SHORT, 0);
 		
+		// Draw a box
+		glDrawElements(GL_TRIANGLES, indices.size(), indexType, 0);
+	
+
 		glfwSwapBuffers(window);
 	}
 	// De-allocate resources
