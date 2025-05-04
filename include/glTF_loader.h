@@ -11,6 +11,10 @@
 #include "accessor.h"
 #include "bufferView.h"
 #include "mesh.h"
+#include "image.h"
+#include "material.h"
+#include "texture.h"
+#include "sampler.h"
 
 using json = nlohmann::json;
 
@@ -28,9 +32,7 @@ public:
 	
 	// A map of meshes and their respective keys
 	std::unordered_map<unsigned int, Mesh> Meshes;
-
-	// FOR later
-	/*
+	
 	// A map of images and their respective keys
 	std::unordered_map<unsigned int, Image> Images;
 	
@@ -43,7 +45,8 @@ public:
 	// A map of samplers and their respective keys
 	std::unordered_map<unsigned int, Sampler> Samplers;
 	
-	
+	// FOR later
+	/*
 	
 	// A map of nodes and their respective keys
 	std::unordered_map<unsigned int, Node> Nodes;
@@ -65,11 +68,11 @@ private:
 	void loadBufferViews(const json& jBufferViews);
 	void loadBuffers(const json& jBuffers);
 	void loadMeshes(const json& jMeshes);
-	/* TO-DO
 	void loadImages(const json& jImages);
 	void loadMaterials(const json& jMaterials);
 	void loadTextures(const json& jTextures);
 	void loadSamplers(const json& jSamplers);
+	/* TO-DO
 	void loadNodes(const json& jNodes);
 	void loadScenes(const json& jScenes);
 	*/
