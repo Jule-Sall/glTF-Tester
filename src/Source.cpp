@@ -1,5 +1,7 @@
 #include <iostream>
 
+#include "stb_image.h"
+
 #include "../include/glTF_loader.h"
 #include "../include/shader.h"
 #include "../include/camera.h"
@@ -24,6 +26,9 @@ bool firstMouse = true;
 // Timing
 float deltaTime = 0.0f;	// time between current frame and last frame
 float lastFrame = 0.0f;
+
+// Light position
+glm::vec3 lightPos = glm::vec3(-0.6f, 4.0f, 1.0f);
 
 size_t getNumComponents(const std::string& type) {
 	if (type == "VEC2")
@@ -54,7 +59,21 @@ struct Vertex {
 	glm::vec3 Position;
 	glm::vec3 Normal;
 	glm::vec3 Color;
+	glm::vec2 TexCoord;
 };
+
+std::vector<unsigned int> VAOs;
+std::vector<unsigned int> VBOs;
+std::vector<unsigned int> EBOs;
+std::unordered_map<unsigned int, std::vector<unsigned char>> indices;
+std::unordered_map<unsigned int, GLenum> modes;
+std::vector<unsigned int> Textures;
+std::vector<size_t> vertices_count;
+
+void Draw(Shader& shader);
+void setUpMesh(Mesh& mesh, glTFloader& loader);
+void ProcessMesh(glTFloader& loader);
+
 int main() {
 	glfwInit();
 
@@ -84,101 +103,13 @@ int main() {
 	glViewport(0, 0, SCR_WIDTH, SCR_HEIGHT);
 
 	// Create a shader
-	Shader shader("resources/shaders/box.vs", "resources/shaders/box.fs");
+	Shader shader("resources/shaders/textured_cube.vs", "resources/shaders/textured_cube.fs");
 
-	const std::string modelPath = "resources/models/BoxVertexColors/glTF/BoxVertexColors.gltf";
-	const std::string directory = "resources/models/BoxVertexColors/glTF/";
+	const std::string modelPath = "resources/models/BoxTextured/glTF/BoxTextured.gltf";
+	const std::string directory = "resources/models/BoxTextured/glTF/";
 	glTFloader loader(modelPath, directory);
+	ProcessMesh(loader);
 
-	// VAO / VBO / EBO configuration
-	unsigned int VAO, VBO, EBO;
-
-	// Save VBO and EBO configuration state into our VAO
-	glGenVertexArrays(1, &VAO);
-	glBindVertexArray(VAO);
-
-	glGenBuffers(1, &VBO);
-	glGenBuffers(1, &EBO);
-	
-	std::vector<Vertex> vertices;
-	std::vector<unsigned char> indices;
-
-	GLenum indexType;
-	unsigned int index = 0;
-	for (auto& mesh : loader.Meshes) {
-		// Primitives
-		auto primitives = mesh.second.primitives;
-		if (primitives[index].attributes.count(POSITION) 
-			&& 
-			primitives[index].attributes.count(NORMAL)
-			&&
-			primitives[index].attributes.count(COLOR_0))
-		{
-			std::cout << "called!" << std::endl;
-			
-			// Get the position accessor index
-			unsigned int posAccessorIndex = primitives[index].attributes[POSITION];
-			// Get the position accessor
-			Accessor posAccessor = loader.Accessors[posAccessorIndex];
-			// Get the normal accessor index
-			unsigned int normAccessorIndex = primitives[index].attributes[NORMAL];
-			// Get the normal accessor
-			Accessor normAccessor = loader.Accessors[normAccessorIndex];
-			// Get the color accessor index
-			unsigned int colorAccessorIndex = primitives[index].attributes[COLOR_0];
-			// Get the color accessor
-			Accessor colorAccessor = loader.Accessors[colorAccessorIndex];
-			
-			// Get positions data
-			std::vector<unsigned char> positionData = loader.GetData(posAccessor);
-			const float* positions = reinterpret_cast<const float*>(positionData.data());
-			// Get normals data
-			std::vector<unsigned char> normalData = loader.GetData(normAccessor);
-			const float* normals = reinterpret_cast<const float*>(normalData.data());
-			// Get colors data
-			std::vector<unsigned char> colorData = loader.GetData(colorAccessor);
-			const float* colors = reinterpret_cast<const float*>(colorData.data());
-
-			for (int i = 0; i != posAccessor.count; ++i) {
-				Vertex vertex;
-				// 1.Position
-				vertex.Position.x = positions[i * 3 + 0];
-				vertex.Position.y = positions[i * 3 + 1];
-				vertex.Position.z = positions[i * 3 + 2];
-				// 2.Normal
-				vertex.Normal.x = normals[i * 3 + 0];
-				vertex.Normal.y = normals[i * 3 + 1];
-				vertex.Normal.z = normals[i * 3 + 2];
-				// 3.Color
-				vertex.Color.x = colors[i * 3 + 0];
-				vertex.Color.y = colors[i * 3 + 1];
-				vertex.Color.z = colors[i * 3 + 2];
-
-				vertices.push_back(vertex);
-			}
-			glBindBuffer(GL_ARRAY_BUFFER, VBO);
-			glBufferData(GL_ARRAY_BUFFER, vertices.size() * sizeof(Vertex), vertices.data(), GL_STATIC_DRAW);
-			glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, sizeof(Vertex), (void*)0);
-			glEnableVertexAttribArray(0);
-		    glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, sizeof(Vertex), (void*)offsetof(Vertex, Normal));
-			glEnableVertexAttribArray(1);
-			glVertexAttribPointer(2, 3, GL_FLOAT, GL_FALSE, sizeof(Vertex), (void*)offsetof(Vertex, Color));
-			glEnableVertexAttribArray(2);
-		}
-	    // Indices
-		unsigned int indicesAccessorIndex = primitives[index].indices;
-		Accessor indicesAccessor = loader.Accessors[indicesAccessorIndex];
-		indices = loader.GetData(indicesAccessor);
-		indexType = indicesAccessor.componentType;
-		glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, EBO);
-		glBufferData(GL_ELEMENT_ARRAY_BUFFER, indices.size() * getComponentTypeSize(indexType), indices.data(), GL_STATIC_DRAW);
-	    index++;
-		vertices.clear();
-	}
-
-	// Unbind our VAO
-	glBindVertexArray(0);
-	
 	while (!glfwWindowShouldClose(window)) {
 		// Per-frame time logic
 	   // --------------------
@@ -206,20 +137,30 @@ int main() {
 		shader.SetMatrix4f("model", model);
 		shader.SetMatrix4f("view", view);
 		shader.SetMatrix4f("projection", projection);
-
-		// Bind our VAO
-		glBindVertexArray(VAO);
 		
-		// Draw a box
-		glDrawElements(GL_TRIANGLES, indices.size(), indexType, 0);
-	
+		Draw(shader);
+
 
 		glfwSwapBuffers(window);
 	}
 	// De-allocate resources
-	glDeleteBuffers(1, &VBO);
-	glDeleteBuffers(1, &EBO);
-	glDeleteVertexArrays(1, &VAO);
+	for (unsigned int& VBO : VBOs) {
+		glDeleteBuffers(1, &VBO);
+	}
+	VBOs.clear();
+	for (unsigned int& EBO : EBOs) {
+		glDeleteBuffers(1, &EBO);
+	}
+	EBOs.clear();
+	for (unsigned int& VAO : VAOs) {
+		glDeleteVertexArrays(1, &VAO);
+	}
+	VAOs.clear();
+	for (unsigned int& texture : Textures) {
+		glDeleteTextures(1, &texture);
+	}
+	Textures.clear();
+
 	glfwDestroyWindow(window);
 
 	glfwTerminate();
@@ -280,4 +221,150 @@ void mouse_callback(GLFWwindow* window, double xposIn, double yposIn)
 void scroll_callback(GLFWwindow* window, double xoffset, double yoffset)
 {
 	camera.ProcessMouseScroll(static_cast<float>(yoffset));
+}
+
+void Draw(Shader& shader) {
+	shader.Use();
+	for (int i = 0; i != VAOs.size(); ++i) {
+		glBindVertexArray(VAOs[i]);
+		glBindTexture(GL_TEXTURE_2D, Textures[i]);
+		if (!indices.empty()) {
+			glDrawElements(modes[i], indices[i].size(), GL_UNSIGNED_SHORT, 0);
+		}
+		else {
+			glDrawArrays(modes[i], 0, vertices_count[i]);
+		}
+		glBindVertexArray(0);
+	}
+}
+
+
+void setUpMesh(Mesh& mesh, glTFloader& loader) {
+	unsigned int i = 0;
+	for (auto& primitive : mesh.primitives) {
+		VAOs.resize(i + 1);
+		VBOs.resize(i + 1);
+		EBOs.resize(i + 1);
+
+		glGenVertexArrays(1, &VAOs[i]);
+		glBindVertexArray(VAOs[i]);
+
+		glGenBuffers(1, &VBOs[i]);
+		glGenBuffers(1, &EBOs[i]);
+
+		std::vector<float> positions;
+		std::vector<float> normals;
+		std::vector<float> colors;
+		std::vector<float> texCoords;
+		std::vector<Vertex> vertices;
+		unsigned int numVertices;
+
+		if (primitive.attributes.count(POSITION)) {
+			Accessor posAccessor = loader.Accessors[primitive.attributes[POSITION]];
+			numVertices = posAccessor.count;
+			std::vector<unsigned char> posData = loader.GetData(posAccessor);
+			size_t elementCount = posAccessor.count * getNumComponents(posAccessor.type);
+			positions.resize(elementCount);
+			memcpy(positions.data(), posData.data(), elementCount * sizeof(float));
+		}
+		if (primitive.attributes.count(NORMAL)) {
+			Accessor normAccessor = loader.Accessors[primitive.attributes[NORMAL]];
+			std::vector<unsigned char> normData = loader.GetData(normAccessor);
+			size_t elementCount = normAccessor.count * getNumComponents(normAccessor.type);
+			normals.resize(elementCount);
+			memcpy(normals.data(), normData.data(), elementCount * getComponentTypeSize(normAccessor.componentType));
+		}
+		if (primitive.attributes.count(TEXCOORD_0)) {
+			Accessor texCoordAccessor = loader.Accessors[primitive.attributes[TEXCOORD_0]];
+			std::vector<unsigned char> texCoordData = loader.GetData(texCoordAccessor);
+			size_t elementCount = texCoordAccessor.count * getNumComponents(texCoordAccessor.type);
+			texCoords.resize(elementCount);
+			memcpy(texCoords.data(), texCoordData.data(), elementCount * getComponentTypeSize(texCoordAccessor.componentType));
+		}
+		if (primitive.attributes.count(COLOR_0)) {
+			Accessor colorAccessor = loader.Accessors[primitive.attributes[COLOR_0]];
+			std::vector<unsigned char> colorData = loader.GetData(colorAccessor);
+			size_t elementCount = colorAccessor.count * getNumComponents(colorAccessor.type);
+			colors.resize(elementCount);
+			memcpy(colors.data(), colorData.data(), elementCount * getComponentTypeSize(colorAccessor.componentType));
+		}
+		for (int j = 0; j != numVertices; ++j) {
+			Vertex vertex;
+			if (!positions.empty()) {
+				vertex.Position.x = positions[j * 3 + 0];
+				vertex.Position.y = positions[j * 3 + 1];
+				vertex.Position.z = positions[j * 3 + 2];
+			}
+			if (!normals.empty()) {
+				vertex.Normal.x = normals[j * 3 + 0];
+				vertex.Normal.y = normals[j * 3 + 1];
+				vertex.Normal.z = normals[j * 3 + 2];
+			}
+			if (!colors.empty()) {
+				vertex.Color.x = colors[j * 3 + 0];
+				vertex.Color.y = colors[j * 3 + 1];
+				vertex.Color.z = colors[j * 3 + 2];
+			}
+			if (!texCoords.empty()) {
+				vertex.TexCoord.x = texCoords[j * 2 + 0];
+				vertex.TexCoord.y = texCoords[j * 2 + 1];
+			}
+			vertices.push_back(vertex);
+		}
+		glBindBuffer(GL_ARRAY_BUFFER, VBOs[i]);
+		glBufferData(GL_ARRAY_BUFFER, vertices.size() * sizeof(Vertex), vertices.data(), GL_STATIC_DRAW);
+		glEnableVertexAttribArray(0);
+		glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, sizeof(Vertex), (void*)0);
+		glEnableVertexAttribArray(1);
+		glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, sizeof(Vertex), (void*)offsetof(Vertex, Normal));
+		glEnableVertexAttribArray(2);
+		glVertexAttribPointer(2, 3, GL_FLOAT, GL_FALSE, sizeof(Vertex), (void*)offsetof(Vertex, Color));
+		glEnableVertexAttribArray(3);
+		glVertexAttribPointer(3, 2, GL_FLOAT, GL_FALSE, sizeof(Vertex), (void*)offsetof(Vertex, TexCoord));
+		glBindBuffer(GL_ARRAY_BUFFER, 0);
+	    // Indices
+		if (primitive.indices) {
+			Accessor indicesAccessor = loader.Accessors[*(primitive.indices)];
+			indices[i] = loader.GetData(indicesAccessor);
+			glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, EBOs[i]);
+			glBufferData(GL_ELEMENT_ARRAY_BUFFER, indices[i].size() * getComponentTypeSize(indicesAccessor.componentType), indices[i].data(), GL_STATIC_DRAW);
+		}
+		// Primitive's type
+		modes[i] = primitive.mode;
+
+		// Texture set up
+		unsigned int texture;
+		glGenTextures(1, &texture);
+		glBindTexture(GL_TEXTURE_2D, texture);
+		if (primitive.material) {
+			unsigned int material = *(primitive.material);
+			Image image = loader.Images[loader.Textures[material].source];
+			Sampler sampler = loader.Samplers[loader.Textures[material].sampler];
+			int width, height, nrChannels;
+			unsigned char* data = stbi_load(image.uri.c_str(), &width, &height, &nrChannels, 0);
+			if (data) {
+				glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, sampler.minFilter);
+				glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, sampler.magFilter);
+				glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, sampler.wrapS);
+				glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, sampler.wrapT);
+				glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, width, height, 0, GL_RGB, GL_UNSIGNED_BYTE, data);
+				glGenerateMipmap(GL_TEXTURE_2D);
+				glBindTexture(GL_TEXTURE_2D, 0);
+
+				stbi_image_free(data);
+			}
+			else {
+				std::cout << "failed to load texture" << std::endl;
+			}
+		}
+		glBindTexture(GL_TEXTURE_2D, 0);
+		Textures.push_back(texture);
+		vertices_count.push_back(vertices.size());
+		i++;
+	}
+}
+void ProcessMesh(glTFloader& loader) {
+	for (auto& mesh : loader.Meshes) {
+		setUpMesh(mesh.second, loader);
+	}
 }

@@ -15,6 +15,9 @@
 #include "material.h"
 #include "texture.h"
 #include "sampler.h"
+#include "node.h"
+#include "scene.h"
+
 
 using json = nlohmann::json;
 
@@ -45,22 +48,20 @@ public:
 	// A map of samplers and their respective keys
 	std::unordered_map<unsigned int, Sampler> Samplers;
 	
-	// FOR later
-	/*
-	
 	// A map of nodes and their respective keys
 	std::unordered_map<unsigned int, Node> Nodes;
 	
 	// A map of scenes and their respective keys
 	std::unordered_map<unsigned int, Scene> Scenes;
-	*/
-
+	
 	// Constructor
 	glTFloader(const std::string& modelPath, const std::string& directory);
 
 	std::vector<unsigned char> GetData(Accessor& accessor);
 
 private:
+	// Directory
+	std::string directory = "";
 	// A binary geometry to store the contents needed for drawing
 	std::unordered_map<unsigned int, std::vector<unsigned char>> binaryGeometry;
 	
@@ -72,10 +73,8 @@ private:
 	void loadMaterials(const json& jMaterials);
 	void loadTextures(const json& jTextures);
 	void loadSamplers(const json& jSamplers);
-	/* TO-DO
 	void loadNodes(const json& jNodes);
 	void loadScenes(const json& jScenes);
-	*/
 	void loadBinaryGeometry(std::ifstream& binFile, unsigned int buffer);
 };
 
